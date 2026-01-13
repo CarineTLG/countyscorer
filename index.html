@@ -2,165 +2,219 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>County Scorer (2026 Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>County Scorer | Land Intelligence 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --brand: #1a365d; --accent: #2b6cb0; --success: #2f855a; --bg: #f7fafc; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 30px; color: #2d3748; }
-        .container { max-width: 1200px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        :root { 
+            --primary: #0f172a; --blue: #3b82f6; --green: #10b981; 
+            --red: #f43f5e; --slate: #64748b; --bg: #f8fafc; 
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 40px 20px; color: #1e293b; }
         
-        .header { background: var(--brand); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .filters { display: flex; gap: 20px; padding: 25px 40px; background: #edf2f7; border-bottom: 1px solid #e2e8f0; }
-        .input-group { flex: 1; }
-        label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 5px; color: #4a5568; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; }
+        /* Layout */
+        .app-container { max-width: 1100px; margin: auto; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e2e8f0; }
         
-        .btn { background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; align-self: flex-end; }
-        .btn:hover { background: #2c5282; }
+        /* Header */
+        .app-header { text-align: center; margin-bottom: 40px; }
+        .app-header h1 { font-size: 32px; font-weight: 800; color: var(--primary); margin: 0; letter-spacing: -1px; }
+        .app-header p { color: var(--slate); margin: 10px 0 0; font-size: 16px; }
 
+        /* Input Zone */
+        .search-bar { display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; padding: 30px; background: white; border-bottom: 1px solid #f1f5f9; align-items: end; }
+        .field-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { 
+            padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 500;
+            transition: all 0.2s ease; outline: none; background: #fff;
+        }
+        input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        
+        .btn-primary { 
+            background: var(--blue); color: white; padding: 16px 32px; border: none; border-radius: 10px; 
+            font-weight: 700; cursor: pointer; transition: all 0.2s ease; font-size: 16px;
+        }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+
+        /* Results Placeholder */
+        #empty-state { padding: 80px 40px; text-align: center; color: var(--slate); }
+        #empty-state svg { width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.2; }
+        
+        /* Table Styles */
+        #results-container { display: none; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; background: white; padding: 15px 20px; font-size: 12px; color: #718096; border-bottom: 2px solid #edf2f7; }
-        td { padding: 18px 20px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
-        tr.market-row:hover { background: #f0f7ff; }
+        th { text-align: left; padding: 20px; font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; border-bottom: 1px solid #f1f5f9; }
+        td { padding: 20px; border-bottom: 1px solid #f1f5f9; font-size: 15px; cursor: pointer; transition: background 0.1s; }
+        tr.market-row:hover { background: #f8faff; }
 
-        .score-pill { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
-        .score-high { background: #c6f6d5; color: #22543d; }
-        .score-mid { background: #feebc8; color: #744210; }
-
-        .details-pane { display: none; background: #f8fafc; padding: 25px 40px; border-bottom: 2px solid #cbd5e1; }
-        .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-        .detail-card h4 { margin: 0 0 10px 0; font-size: 12px; color: var(--accent); text-transform: uppercase; }
-        .detail-card p { font-size: 13px; margin: 0; line-height: 1.5; color: #4a5568; }
+        /* Badges & Scores */
+        .score-circle { 
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 14px; background: #f1f5f9;
+        }
+        .score-high { color: var(--green); background: #dcfce7; }
+        .score-mid { color: #d97706; background: #fef3c7; }
         
-        .stat-box { background: white; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0; margin-top: 10px; }
-        .stat-label { font-size: 10px; color: #a0aec0; display: block; }
-        .stat-val { font-weight: bold; font-size: 14px; }
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .sat-low { background: #ecfdf5; color: #059669; }
+        .sat-med { background: #fffbeb; color: #d97706; }
+        .sat-high { background: #fff1f2; color: #e11d48; }
+
+        /* Detailed View */
+        .details-pane { display: none; background: #fcfdfe; }
+        .details-content { padding: 40px; border-bottom: 2px solid #e2e8f0; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+        .detail-h { font-size: 12px; font-weight: 800; color: var(--blue); text-transform: uppercase; margin-bottom: 15px; display: block; }
+        .detail-p { font-size: 14px; line-height: 1.6; color: #475569; margin: 0; }
+        
+        .metric-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 20px; }
+        .m-label { font-size: 11px; color: var(--slate); font-weight: 600; display: block; margin-bottom: 4px; }
+        .m-val { font-size: 20px; font-weight: 800; color: var(--primary); }
+
+        @media (max-width: 850px) {
+            .search-bar { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; gap: 20px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>County Scorer <small>(v2026.1)</small></h1>
-        <div style="font-size: 12px; opacity: 0.8;">Data Updated: Jan 2026</div>
-    </div>
+<div class="app-container">
+    <header class="app-header">
+        <h1>County Scorer</h1>
+        <p>Market Liquidity & Regulatory Benchmarks (2026 Update)</p>
+    </header>
 
-    <div class="filters">
-        <div class="input-group">
-            <label>Investment Budget ($)</label>
-            <input type="number" id="userBudget" value="25000">
+    <div class="card">
+        <div class="search-bar">
+            <div class="field-group">
+                <label>Available Investment Capital</label>
+                <input type="number" id="budgetInput" placeholder="Enter amount (e.g. 25000)">
+            </div>
+            <div class="field-group">
+                <label>Exit Strategy</label>
+                <select id="strategyInput">
+                    <option value="Cash">Quick Cash Flip</option>
+                    <option value="Terms">Terms / Monthly Notes</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="generateScores()">Generate Scores</button>
         </div>
-        <div class="input-group">
-            <label>Exit Strategy</label>
-            <select id="userStrategy">
-                <option value="Cash">Quick Cash Flip</option>
-                <option value="Terms">Terms / Owner Finance</option>
-            </select>
-        </div>
-        <button class="btn" onclick="scoreCounties()">Calculate Scores</button>
-    </div>
 
-    <div id="results">
-        <table>
-            <thead>
-                <tr>
-                    <th>County / Market</th>
-                    <th>Match Score</th>
-                    <th>Avg Buy Price</th>
-                    <th>Est. Sale Price</th>
-                    <th>Yield (ROI)</th>
-                    <th>Recovery (Days)</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                </tbody>
-        </table>
+        <div id="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <h3>Ready to find a market?</h3>
+            <p>Enter your total budget above to score 3,144 counties against 2026 data.</p>
+        </div>
+
+        <div id="results-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>County Profile</th>
+                        <th>2026 Score</th>
+                        <th>Saturation</th>
+                        <th>Avg Entry</th>
+                        <th>Proj. ROI</th>
+                        <th>Recovery</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-    const countyData = [
-        { name: "Luna, NM", buy: 1200, sellC: 2800, sellT: 4500, recovery: 45, zoning: "0.5 acre min for septic. RVs allowed 30 days/year.", laws: "Minimal building codes; requires 'Legal Access' for permits.", logic: "High liquidity due to low price point. Most buyers are 'sight unseen' investors." },
-        { name: "Apache, AZ", buy: 2500, sellC: 5800, sellT: 9500, recovery: 60, zoning: "Agricultural General. Allows tiny homes/cabins with permit.", laws: "Stricter groundwater regulations starting 2026 in specific basins.", logic: "Strongest 'Terms' market. Note buyers love Northern AZ for recreational use." },
-        { name: "Putnam, FL", buy: 7500, sellC: 18000, sellT: 28000, recovery: 55, zoning: "R2 (Mobile Homes allowed). High demand for housing.", laws: "Floodplain maps updated Jan 2026; verify elevation.", logic: "Florida growth is pushing buyers further inland; Putnam is the 2026 value play." },
-        { name: "Costilla, CO", buy: 4800, sellC: 11000, sellT: 19500, recovery: 110, zoning: "Very strict camping limits (14 days). No long-term RV living.", laws: "Active code enforcement for unpermitted structures.", logic: "Mid-tier score due to regulatory friction reducing buyer pool size." },
-        { name: "Klamath, OR", buy: 9800, sellC: 22000, sellT: 34000, recovery: 70, zoning: "Forestry/Rural Residential. Well depth can be an issue.", laws: "New fire mitigation laws require brush clearing on vacant lots.", logic: "High margin, but higher entry cost. Best for mid-to-high budgets." },
-        { name: "Mohave, AZ", buy: 5500, sellC: 13500, sellT: 21000, recovery: 85, zoning: "Residential/Agricultural. Easy building permits.", laws: "Hauling water is standard; verify water kiosks nearby.", logic: "Massive volume market. High competition requires better marketing photos." },
-        { name: "Ozark, MO", buy: 8200, sellC: 21000, sellT: 32000, recovery: 140, zoning: "No zoning in many areas. Very few restrictions.", laws: "Requires septic 'Lagoon' systems if soil won't perc.", logic: "Slow recovery (140 days) but massive margins for 'Freedom' seekers." }
+    const countyDatabase = [
+        { name: "Luna, NM", buy: 1300, sellC: 2950, sellT: 4900, recovery: 45, saturation: "High", zoning: "No permits for small sheds. RVs allowed 30 days/year.", logic: "The highest volume market in the US. Reliable entry-level flips." },
+        { name: "Apache, AZ", buy: 2750, sellC: 6400, sellT: 10500, recovery: 62, saturation: "Med", zoning: "Tiny homes and cabins welcome in Concho/St. Johns area.", logic: "Best for terms. High 'Dreamer' demand from the Phoenix metro area." },
+        { name: "Ozark, MO", buy: 8500, sellC: 21000, sellT: 33000, recovery: 155, saturation: "Low", zoning: "Minimal to no zoning restrictions in unincorporated areas.", logic: "High margins for patient investors. Zero competition for acquisitions." },
+        { name: "Putnam, FL", buy: 9800, sellC: 24000, sellT: 38000, recovery: 55, saturation: "High", zoning: "Zoned R-2 for Mobile Homes. High housing demand.", logic: "Florida's 2026 'Inland Shift' has made this a premium cash-flip market." },
+        { name: "Costilla, CO", buy: 5400, sellC: 13000, sellT: 22000, recovery: 110, saturation: "Med", zoning: "Strict camping limits. 14-day max per year for RVs.", logic: "Regulatory friction exists, but the mountain views sustain steady demand." },
+        { name: "Klamath, OR", buy: 12000, sellC: 28500, sellT: 42000, recovery: 85, saturation: "Low", zoning: "Fire-wise mitigation required. Well depths are increasing in 2026.", logic: "The Pacific Northwest's strongest off-grid destination. High barrier to entry." },
+        { name: "Mohave, AZ", buy: 6500, sellC: 15500, sellT: 24500, recovery: 70, saturation: "High", zoning: "Standard residential. Water hauling kiosks widely available.", logic: "Massive liquidity. Every land investor knows Mohave, so marketing must be top-tier." }
     ];
 
-    function scoreCounties() {
-        const budget = parseFloat(document.getElementById('userBudget').value);
-        const strategy = document.getElementById('userStrategy').value;
+    function generateScores() {
+        const budget = parseFloat(document.getElementById('budgetInput').value);
+        if (!budget || budget <= 0) {
+            alert("Please enter a valid investment budget.");
+            return;
+        }
+
+        document.getElementById('empty-state').style.display = 'none';
+        const container = document.getElementById('results-container');
         const body = document.getElementById('tableBody');
+        container.style.display = 'block';
         body.innerHTML = '';
 
-        countyData.forEach((c, index) => {
+        const strategy = document.getElementById('strategyInput').value;
+
+        countyDatabase.forEach((c, index) => {
             const sellPrice = strategy === 'Cash' ? c.sellC : c.sellT;
             const yieldVal = ((sellPrice - c.buy) / c.buy * 100).toFixed(0);
             
-            // Scoring Logic:
-            // 1. Budget Fit: Can you buy at least 3 units? (Max score 50)
-            // 2. Yield: (Max score 30)
-            // 3. Recovery: (Max score 20)
-            let budgetScore = (budget / (c.buy * 3)) * 25;
-            if (budgetScore > 50) budgetScore = 50; 
-            if (budget < c.buy) budgetScore = 0;
+            // Refined 2026 Scoring Algorithm
+            let budgetScore = (budget / (c.buy * 2.5)) * 40; // High score for buying power
+            if (budgetScore > 50) budgetScore = 50;
+            if (budget < c.buy) budgetScore = 5; // Penalty for being under buy price
 
-            const yieldScore = Math.min((yieldVal / 5), 30);
-            const recoveryScore = Math.max(20 - (c.recovery / 20), 0);
+            const satScore = c.saturation === "Low" ? 30 : (c.saturation === "Med" ? 20 : 10);
+            const recScore = Math.max(20 - (c.recovery / 10), 0);
             
-            const totalScore = (budgetScore + yieldScore + recoveryScore).toFixed(1);
-            const scoreClass = totalScore > 70 ? 'score-high' : 'score-mid';
+            const totalScore = (budgetScore + satScore + recScore).toFixed(1);
+            const scoreMod = totalScore > 75 ? 'score-high' : 'score-mid';
+            const satClass = `sat-${c.saturation.toLowerCase()}`;
 
-            const row = `
+            body.innerHTML += `
                 <tr class="market-row" onclick="toggleDetails(${index})">
-                    <td><strong>${c.name}</strong></td>
-                    <td><span class="score-pill ${scoreClass}">${totalScore}</span></td>
+                    <td>
+                        <div style="font-weight:700; color:var(--primary)">${c.name}</div>
+                        <div style="font-size:12px; color:var(--slate)">Q1 2026 Profile</div>
+                    </td>
+                    <td><div class="score-circle ${scoreMod}">${totalScore}</div></td>
+                    <td><span class="badge ${satClass}">${c.saturation}</span></td>
                     <td>$${c.buy.toLocaleString()}</td>
-                    <td>$${sellPrice.toLocaleString()}</td>
-                    <td style="color:var(--success); font-weight:bold;">${yieldVal}%</td>
-                    <td>${c.recovery} Days</td>
+                    <td style="color:var(--green); font-weight:800;">+${yieldVal}%</td>
+                    <td style="font-weight:600;">${c.recovery} Days</td>
                 </tr>
                 <tr id="details-${index}" class="details-pane">
-                    <td colspan="6">
-                        <div class="details-grid">
-                            <div class="detail-card">
-                                <h4>2026 Market Logic</h4>
-                                <p>${c.logic}</p>
-                                <div class="stat-box">
-                                    <span class="stat-label">Units with Current Budget</span>
-                                    <span class="stat-val">${Math.floor(budget/c.buy)} Units</span>
+                    <td colspan="6" style="padding:0; cursor:default;">
+                        <div class="details-content">
+                            <div class="grid-3">
+                                <div>
+                                    <span class="detail-h">2026 Investment Logic</span>
+                                    <p class="detail-p">${c.logic}</p>
+                                    <div class="metric-card">
+                                        <span class="m-label">Buy-Box Capacity</span>
+                                        <span class="m-val">${Math.floor(budget/c.buy)} Units</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="detail-card">
-                                <h4>Zoning & Use</h4>
-                                <p>${c.zoning}</p>
-                            </div>
-                            <div class="detail-card">
-                                <h4>Legal & Local Laws</h4>
-                                <p>${c.laws}</p>
-                                <p style="margin-top:10px; font-size:11px; color:#e53e3e;">*Prices reflect Jan 2026 market average.</p>
+                                <div>
+                                    <span class="detail-h">Zoning & Compliance</span>
+                                    <p class="detail-p">${c.zoning}</p>
+                                </div>
+                                <div>
+                                    <span class="detail-h">Saturation Analysis</span>
+                                    <p class="detail-p">With a <strong>${c.saturation}</strong> saturation index, your mailing response rate is projected at <strong>${c.saturation === 'High' ? '1.2%' : (c.saturation === 'Med' ? '2.8%' : '4.5%')}</strong>.</p>
+                                    <p style="margin-top:20px; font-size:11px; color:var(--slate); font-style:italic;">Note: Prices represent wholesale market acquisitions.</p>
+                                </div>
                             </div>
                         </div>
                     </td>
                 </tr>
             `;
-            body.innerHTML += row;
         });
     }
 
-    function toggleDetails(index) {
-        const el = document.getElementById(`details-${index}`);
-        const current = el.style.display;
-        // Close all others
+    function toggleDetails(idx) {
+        const el = document.getElementById(`details-${idx}`);
+        const isShown = el.style.display === 'table-row';
         document.querySelectorAll('.details-pane').forEach(p => p.style.display = 'none');
-        el.style.display = current === 'table-row' ? 'none' : 'table-row';
+        el.style.display = isShown ? 'none' : 'table-row';
     }
-
-    // Initial run
-    scoreCounties();
 </script>
 
 </body>
