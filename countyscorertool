@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Land Arbitrage & Tax Estimator</title>
+    <style>
+        :root { --primary: #27ae60; --secondary: #2c3e50; --bg: #f8fbf9; --accent: #e67e22; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); padding: 30px; }
+        .header { border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .input-box { display: flex; flex-direction: column; }
+        label { font-size: 12px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase; }
+        input, select { padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 15px; }
+        .toggle-box { background: #fdf2e9; border: 1px solid #fad7a0; padding: 15px; border-radius: 8px; grid-column: span 3; display: flex; align-items: center; gap: 15px; }
+        button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+        button:hover { background: #219150; }
+        .results { display: none; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 12px; background: #f4f7f6; font-size: 13px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .warning { color: var(--accent); font-weight: bold; font-size: 12px; margin-top: 10px; }
+        .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .card { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 8px; text-align: center; }
+        .val { display: block; font-size: 20px; font-weight: 800; color: var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🚀 2026 Land Arbitrage Engine (v1.5)</h1>
+        <p style="font-size: 14px; color: #666;">Optimized for Jan 2026 Market Data</p>
+    </div>
+
+    <div class="grid">
+        <div class="input-box">
+            <label>Budget ($)</label>
+            <input type="number" id="budget" value="10000">
+        </div>
+        <div class="input-box">
+            <label>Exit Strategy</label>
+            <select id="strategy">
+                <option value="cash">Quick Cash Flip</option>
+                <option value="terms">Terms (Monthly)</option>
+            </select>
+        </div>
+        <div class="input-box">
+            <label>Closing Style</label>
+            <select id="closing">
+                <option value="diy">DIY / Notary ($150)</option>
+                <option value="title">Title Company ($1,200)</option>
+            </select>
+        </div>
+        <div class="toggle-box">
+            <input type="checkbox" id="taxDelinquent" style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+                <strong style="color: #d35400;">Enable Tax Delinquency Strategy (Advanced)</strong><br>
+                <span style="font-size: 12px;">Estimates acquisition via paying back taxes + $500 'walking fee' directly to owners.</span>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="calculate()">Analyze 2026 Markets</button>
+
+    <div id="results" class="results">
+        <div class="summary-cards">
+            <div class="card"><span class="lbl" style="font-size:11px; color:#999;">TARGET COUNTY</span><span id="resCounty" class="val">-</span></div>
+            <div class="card"><span class="lbl" style="font-size:11px; color:#999;">TOTAL UNITS</span><span id="resUnits" class="val">-</span></div>
+            <div class="card"><span class="lbl" style="font-size:11px; color:#999;">EST. PROFIT</span><span id="resProfit" class="val">-</span></div>
+        </div>
+        <div id="strategyWarning" class="warning" style="display:none;">⚠️ WARNING: Tax Deed flips take 90-120 days due to title clearing. 30-day target unlikely.</div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>County</th>
+                    <th>Score</th>
+                    <th>Acquisition</th>
+                    <th>Est. Sale</th>
+                    <th>Recovery (CRT)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function calculate() {
+    const budget = parseFloat(document.getElementById('budget').value);
+    const strategy = document.getElementById('strategy').value;
+    const isTax = document.getElementById('taxDelinquent').checked;
+    const closeCost = document.getElementById('closing').value === 'title' ? 1200 : 150;
+
+    const data = [
+        { name: "Luna, NM", marketAcq: 950, taxAcq: 450, sale: 2800, score: 9.9, crt: "14-30 Days" },
+        { name: "Apache, AZ", marketAcq: 3200, taxAcq: 1200, sale: 7500, score: 8.7, crt: "45-60 Days" },
+        { name: "Elko, NV", marketAcq: 2800, taxAcq: 1100, sale: 5500, score: 7.2, crt: "75-90 Days" },
+        { name: "Costilla, CO", marketAcq: 6800, taxAcq: 3500, sale: 13500, score: 5.4, crt: "180+ Days" }
+    ];
+
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    document.getElementById('strategyWarning').style.display = isTax ? 'block' : 'none';
+
+    data.forEach(item => {
+        let baseAcq = isTax ? item.taxAcq : item.marketAcq;
+        let totalAcqPerUnit = baseAcq + closeCost;
+        let units = Math.floor(budget / totalAcqPerUnit);
+        let profit = units * (item.sale - totalAcqPerUnit);
+        
+        if(item.name === "Luna, NM") {
+            document.getElementById('resCounty').innerText = item.name;
+            document.getElementById('resUnits').innerText = units + " Lots";
+            document.getElementById('resProfit').innerText = "$" + profit.toLocaleString();
+        }
+
+        tbody.innerHTML += `<tr>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="highlight">${item.score}</span></td>
+            <td>$${totalAcqPerUnit.toLocaleString()}</td>
+            <td>$${item.sale.toLocaleString()}</td>
+            <td>${isTax ? "90+ Days (Legal)" : item.crt}</td>
+        </tr>`;
+    });
+
+    document.getElementById('results').style.display = 'block';
+}
+</script>
+</body>
+</html>
