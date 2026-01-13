@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 Land Arbitrage & Tax Estimator</title>
     <style>
-        :root { --primary: #27ae60; --secondary: #2c3e50; --bg: #f8fbf9; --accent: #e67e22; }
+        :root { --primary: #27ae60; --secondary: #2c3e50; --bg: #f8fbf9; --accent: #e67e22; --warning: #c0392b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #333; }
-        .container { max-width: 950px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); padding: 30px; }
+        .container { max-width: 1200px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); padding: 30px; }
         .header { border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .input-box { display: flex; flex-direction: column; }
@@ -16,29 +16,44 @@
         .toggle-box { background: #fdf2e9; border: 1px solid #fad7a0; padding: 15px; border-radius: 8px; grid-column: span 3; display: flex; align-items: center; gap: 15px; }
         button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
         button:hover { background: #219150; }
-        .results { display: none; margin-top: 30px; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 30px; }
+        .results { display: none; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; background: #f4f7f6; font-size: 13px; }
+        th { text-align: left; padding: 12px; background: #f4f7f6; font-size: 13px; font-weight: 600; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        tr:hover { background: #f9f9f9; cursor: pointer; }
+        tr.active { background: #e8f5e9; border-left: 4px solid var(--primary); }
         .highlight { color: var(--primary); font-weight: bold; }
-        .warning { color: var(--accent); font-weight: bold; font-size: 12px; margin-top: 10px; }
+        .warning { color: var(--warning); font-weight: bold; font-size: 12px; margin-top: 10px; padding: 10px; background: #fdeaea; border-radius: 6px; border-left: 4px solid var(--warning); }
         .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .card { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 8px; text-align: center; }
         .val { display: block; font-size: 20px; font-weight: 800; color: var(--secondary); }
+        .reasoning { background: #f4f7f6; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); display: none; }
+        .reasoning h3 { margin-top: 0; color: var(--secondary); font-size: 14px; text-transform: uppercase; }
+        .reasoning-item { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
+        .reasoning-item strong { color: var(--secondary); }
+        .reasoning-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .breakdown-section { background: white; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0; }
+        .breakdown-title { font-size: 11px; font-weight: bold; color: #999; text-transform: uppercase; margin-bottom: 8px; }
+        .breakdown-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+        .breakdown-item span:first-child { color: #666; }
+        .breakdown-item span:last-child { font-weight: 600; color: var(--secondary); }
+        .budget-warning { color: var(--warning); font-weight: bold; margin-top: 8px; padding: 8px; background: #fdeaea; border-radius: 4px; font-size: 12px; }
+        .no-selection { text-align: center; color: #999; padding: 30px; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>🚀 2026 Land Arbitrage Engine (v1.5)</h1>
-        <p style="font-size: 14px; color: #666;">Optimized for Jan 2026 Market Data</p>
+        <h1>🚀 2026 Land Arbitrage Engine (v2.0)</h1>
+        <p style="font-size: 14px; color: #666;">Click any county for detailed reasoning & breakdown</p>
     </div>
 
     <div class="grid">
         <div class="input-box">
             <label>Budget ($)</label>
-            <input type="number" id="budget" value="10000">
+            <input type="number" id="budget" value="10000" min="500">
         </div>
         <div class="input-box">
             <label>Exit Strategy</label>
@@ -58,7 +73,7 @@
             <input type="checkbox" id="taxDelinquent" style="width: 20px; height: 20px; cursor: pointer;">
             <div>
                 <strong style="color: #d35400;">Enable Tax Delinquency Strategy (Advanced)</strong><br>
-                <span style="font-size: 12px;">Estimates acquisition via paying back taxes + $500 'walking fee' directly to owners.</span>
+                <span style="font-size: 12px;">Estimates acquisition via paying back taxes + $500 'walking fee' directly to owners. Must stay within budget.</span>
             </div>
         </div>
     </div>
@@ -72,62 +87,170 @@
             <div class="card"><span class="lbl" style="font-size:11px; color:#999;">EST. PROFIT</span><span id="resProfit" class="val">-</span></div>
         </div>
         <div id="strategyWarning" class="warning" style="display:none;">⚠️ WARNING: Tax Deed flips take 90-120 days due to title clearing. 30-day target unlikely.</div>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>County</th>
-                    <th>Score</th>
-                    <th>Acquisition</th>
-                    <th>Est. Sale</th>
-                    <th>Recovery (CRT)</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
+
+        <div class="main-content">
+            <div>
+                <h2 style="margin-top: 0; font-size: 16px; color: var(--secondary);">Market Comparison</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>County</th>
+                            <th>Score</th>
+                            <th>Per Unit Cost</th>
+                            <th>Est. Sale</th>
+                            <th>Timeline</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="reasoning" id="reasoningPanel">
+                <div class="no-selection">← Select a county to see full breakdown</div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+const data = [
+    { name: "Luna, NM", marketAcq: 950, taxAcq: 450, taxWalking: 500, sale: 2800, score: 9.9, crt: "14-30 Days", days: 22 },
+    { name: "Apache, AZ", marketAcq: 3200, taxAcq: 1200, taxWalking: 500, sale: 7500, score: 8.7, crt: "45-60 Days", days: 52 },
+    { name: "Elko, NV", marketAcq: 2800, taxAcq: 1100, taxWalking: 500, sale: 5500, score: 7.2, crt: "75-90 Days", days: 82 },
+    { name: "Costilla, CO", marketAcq: 6800, taxAcq: 3500, taxWalking: 500, sale: 13500, score: 5.4, crt: "180+ Days", days: 180 }
+];
+
+let selectedCounty = null;
+
 function calculate() {
     const budget = parseFloat(document.getElementById('budget').value);
     const strategy = document.getElementById('strategy').value;
     const isTax = document.getElementById('taxDelinquent').checked;
     const closeCost = document.getElementById('closing').value === 'title' ? 1200 : 150;
 
-    const data = [
-        { name: "Luna, NM", marketAcq: 950, taxAcq: 450, sale: 2800, score: 9.9, crt: "14-30 Days" },
-        { name: "Apache, AZ", marketAcq: 3200, taxAcq: 1200, sale: 7500, score: 8.7, crt: "45-60 Days" },
-        { name: "Elko, NV", marketAcq: 2800, taxAcq: 1100, sale: 5500, score: 7.2, crt: "75-90 Days" },
-        { name: "Costilla, CO", marketAcq: 6800, taxAcq: 3500, sale: 13500, score: 5.4, crt: "180+ Days" }
-    ];
-
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     document.getElementById('strategyWarning').style.display = isTax ? 'block' : 'none';
 
-    data.forEach(item => {
-        let baseAcq = isTax ? item.taxAcq : item.marketAcq;
+    let bestCounty = null;
+    let bestProfit = -Infinity;
+
+    data.forEach((item, idx) => {
+        let baseAcq = isTax ? item.taxAcq + item.taxWalking : item.marketAcq;
         let totalAcqPerUnit = baseAcq + closeCost;
+        
+        // FIX: Respect budget constraint
         let units = Math.floor(budget / totalAcqPerUnit);
+        let totalInvested = units * totalAcqPerUnit;
         let profit = units * (item.sale - totalAcqPerUnit);
         
-        if(item.name === "Luna, NM") {
-            document.getElementById('resCounty').innerText = item.name;
-            document.getElementById('resUnits').innerText = units + " Lots";
-            document.getElementById('resProfit').innerText = "$" + profit.toLocaleString();
+        if (profit > bestProfit && units > 0) {
+            bestProfit = profit;
+            bestCounty = idx;
         }
 
-        tbody.innerHTML += `<tr>
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+        row.onclick = () => showReasoning(idx, budget, isTax, closeCost);
+        row.innerHTML = `
             <td><strong>${item.name}</strong></td>
             <td><span class="highlight">${item.score}</span></td>
             <td>$${totalAcqPerUnit.toLocaleString()}</td>
             <td>$${item.sale.toLocaleString()}</td>
-            <td>${isTax ? "90+ Days (Legal)" : item.crt}</td>
-        </tr>`;
+            <td>${isTax ? "90-120 Days" : item.crt}</td>
+        `;
+        tbody.appendChild(row);
     });
 
+    if (bestCounty !== null) {
+        const best = data[bestCounty];
+        const baseAcq = isTax ? best.taxAcq + best.taxWalking : best.marketAcq;
+        const totalAcqPerUnit = baseAcq + closeCost;
+        const units = Math.floor(budget / totalAcqPerUnit);
+        const profit = units * (best.sale - totalAcqPerUnit);
+        
+        document.getElementById('resCounty').innerText = best.name;
+        document.getElementById('resUnits').innerText = units + " Lots";
+        document.getElementById('resProfit').innerText = "$" + profit.toLocaleString();
+        
+        selectedCounty = null;
+        showReasoning(bestCounty, budget, isTax, closeCost);
+    }
+
     document.getElementById('results').style.display = 'block';
+}
+
+function showReasoning(countyIdx, budget, isTax, closeCost) {
+    const item = data[countyIdx];
+    const baseAcq = isTax ? item.taxAcq + item.taxWalking : item.marketAcq;
+    const totalAcqPerUnit = baseAcq + closeCost;
+    const units = Math.floor(budget / totalAcqPerUnit);
+    const totalInvested = units * totalAcqPerUnit;
+    const grossRevenue = units * item.sale;
+    const profit = units * (item.sale - totalAcqPerUnit);
+    const roi = ((profit / totalInvested) * 100).toFixed(1);
+
+    // Highlight selected row
+    document.querySelectorAll('tbody tr').forEach((row, idx) => {
+        row.classList.remove('active');
+        if (idx === countyIdx) row.classList.add('active');
+    });
+
+    const acqBreakdown = isTax 
+        ? `<div class="breakdown-item"><span>Back Taxes:</span><span>$${item.taxAcq.toLocaleString()}</span></div><div class="breakdown-item"><span>Walking Fee:</span><span>$${item.taxWalking.toLocaleString()}</span></div>`
+        : `<div class="breakdown-item"><span>Market Acquisition:</span><span>$${item.marketAcq.toLocaleString()}</span></div>`;
+
+    const html = `
+        <h3>📊 Detailed Analysis: ${item.name}</h3>
+        
+        <div class="reasoning-item">
+            <strong>Strategy:</strong> ${isTax ? 'Tax Delinquency' : 'Market Purchase'}
+        </div>
+
+        <div class="reasoning-breakdown">
+            <div class="breakdown-section">
+                <div class="breakdown-title">💰 Acquisition Cost per Unit</div>
+                ${acqBreakdown}
+                <div class="breakdown-item"><span>Closing Costs:</span><span>$${closeCost.toLocaleString()}</span></div>
+                <div class="breakdown-item" style="border-top: 1px solid #e0e0e0; padding-top: 8px; margin-top: 8px;"><span><strong>Total per Unit:</strong></span><span><strong>$${totalAcqPerUnit.toLocaleString()}</strong></span></div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">📈 Portfolio Sizing</div>
+                <div class="breakdown-item"><span>Available Budget:</span><span>$${budget.toLocaleString()}</span></div>
+                <div class="breakdown-item"><span>Units Affordable:</span><span><strong>${units}</strong></span></div>
+                <div class="breakdown-item"><span>Total Deployed:</span><span>$${totalInvested.toLocaleString()}</span></div>
+                <div class="breakdown-item"><span>Remaining Cash:</span><span>$${(budget - totalInvested).toLocaleString()}</span></div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">💵 Sale Projection</div>
+                <div class="breakdown-item"><span>Per Unit Sale Price:</span><span>$${item.sale.toLocaleString()}</span></div>
+                <div class="breakdown-item"><span>Total Portfolio Revenue:</span><span>$${grossRevenue.toLocaleString()}</span></div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">🎯 Return Metrics</div>
+                <div class="breakdown-item"><span>Total Profit:</span><span><strong style="color: var(--primary);">$${profit.toLocaleString()}</strong></span></div>
+                <div class="breakdown-item"><span>ROI:</span><span><strong>${roi}%</strong></span></div>
+                <div class="breakdown-item"><span>Timeline:</span><span>${item.crt}</span></div>
+            </div>
+        </div>
+
+        <div class="reasoning-item" style="margin-top: 15px;">
+            <strong>Key Insights:</strong><br>
+            • Market Score: ${item.score}/10 (higher = better fundamentals)<br>
+            • Per-unit margin: $${(item.sale - totalAcqPerUnit).toLocaleString()}<br>
+            • This portfolio scales across ${units} independent properties<br>
+            ${units === 1 ? '• ⚠️ Single unit portfolio - high concentration risk' : `• Diversified across ${units} lots reduces individual property risk`}
+        </div>
+
+        ${units === 0 ? '<div class="budget-warning">⚠️ Budget too low for this county. Increase budget or select cheaper option.</div>' : ''}
+    `;
+
+    document.getElementById('reasoningPanel').innerHTML = html;
+    document.getElementById('reasoningPanel').style.display = 'block';
+    selectedCounty = countyIdx;
 }
 </script>
 </body>
